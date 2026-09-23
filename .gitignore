@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# FastPassword local data (SQLite vaults / accounts) — never commit
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

@@ -1,0 +1,10 @@
+services:
+  fastpassword:
+    build: .
+    ports:
+      - "5031:5031"
+    env_file: .env
+    volumes:
+      - fastpassword-data:/app/data
+volumes:
+  fastpassword-data:
