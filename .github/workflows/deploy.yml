@@ -31,7 +31,7 @@ jobs:
           FASTPASSWORD_SECRET: ci-test-secret
         run: |
           export FASTPASSWORD_RECOVERY_KEY="$(python -m fastpassword.crypto genkey | cut -d= -f2)"
-          pytest -q
+          python -m pytest -q
 
   deploy:
     needs: test
