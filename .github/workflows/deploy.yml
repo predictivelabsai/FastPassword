@@ -1,0 +1,46 @@
+name: Deploy
+
+# Auto-deploy to Coolify on push to main: run the test suite, then trigger a
+# Coolify deployment (which builds the Dockerfile and rolls out the container).
+# Secrets (repo → Settings → Secrets): COOLIFY_BASE_URL, COOLIFY_API_TOKEN,
+# COOLIFY_APP_UUID.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Run tests (SQLite, ephemeral recovery key)
+        env:
+          DB_TYPE: sqlite
+          FASTPASSWORD_DB: data/ci.sqlite
+          FASTPASSWORD_SECRET: ci-test-secret
+        run: |
+          export FASTPASSWORD_RECOVERY_KEY="$(python -m fastpassword.crypto genkey | cut -d= -f2)"
+          pytest -q
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Coolify deployment
+        run: |
+          curl -fsS -X POST "${{ secrets.COOLIFY_BASE_URL }}/api/v1/deploy" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"uuid\":\"${{ secrets.COOLIFY_APP_UUID }}\"}"
+          echo "Coolify deployment triggered for uuid ${{ secrets.COOLIFY_APP_UUID }}"
